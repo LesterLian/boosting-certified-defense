@@ -25,11 +25,11 @@ class AdaBoostBase:
         use_cuda = torch.cuda.is_available()
         self.device = torch.device("cuda" if use_cuda else "cpu")
 
-    def gen_new_base_predictor(self, cur_round, weighted_train_dataset):
+    def gen_new_base_predictor(self, cur_round, weighted_train_loader):
         """
         Args:
             cur_round: Current round.
-            weighted_train_dataset: Weighted version of the training dataset.
+            weighted_train_loader: Weighted version of the training DataLoader.
         Returns:
             new_predictor: The generated new predictor.
             error: Weighted error of the new predictor on training data.
