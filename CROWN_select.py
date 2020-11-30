@@ -1,8 +1,6 @@
-from config import load_config, config_modelloader, config_dataloader
-from argparser import argparser
-import torch
-
 from ada import AdaBoostPretrained, AdaBoostSamme, BasePredictor, WeightedDataset
+from argparser import argparser
+from config import load_config, config_modelloader, config_dataloader
 
 
 class PretrainedSAMME(AdaBoostPretrained, AdaBoostSamme):
