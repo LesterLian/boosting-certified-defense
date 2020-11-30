@@ -2,8 +2,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from dataset_wrapper import WeightedDataset
-from ada_boost_base import AdaBoostBase
+from ada import AdaBoostBase
 
 
 class AdaBoostPretrained(AdaBoostBase):

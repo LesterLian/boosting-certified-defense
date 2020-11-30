@@ -2,10 +2,7 @@ from config import load_config, config_modelloader, config_dataloader
 from argparser import argparser
 import torch
 
-from ada_boost_pretrained import AdaBoostPretrained
-from ada_boost_samme import AdaBoostSamme
-from base_predictor import BasePredictor
-from dataset_wrapper import WeightedDataset
+from ada import AdaBoostPretrained, AdaBoostSamme, BasePredictor, WeightedDataset
 
 
 class PretrainedSAMME(AdaBoostPretrained, AdaBoostSamme):
@@ -25,6 +22,7 @@ class CROWNDataset(WeightedDataset):
         elem = (X.unsqueeze(0), y, self.weight[item])
 
         return elem
+
 
 def main():
     config = load_config(args)

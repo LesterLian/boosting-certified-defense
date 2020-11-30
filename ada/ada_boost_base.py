@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from dataset_wrapper import WeightedDataset
+from .dataset_wrapper import WeightedDataset
 
 
 class AdaBoostBase:
