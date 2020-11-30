@@ -5,6 +5,7 @@ import torch
 from ada_boost_pretrained import AdaBoostPretrained
 from ada_boost_samme import AdaBoostSamme
 from base_predictor import BasePredictor
+from dataset_wrapper import WeightedDataset
 
 
 class PretrainedSAMME(AdaBoostPretrained, AdaBoostSamme):
@@ -12,7 +13,18 @@ class PretrainedSAMME(AdaBoostPretrained, AdaBoostSamme):
         super(PretrainedSAMME, self).__init__(dataset, base_predictor_list, T)
         # TODO recognize number of class
         self.K = 10
+        self.weighted_data = CROWNDataset(self.dataset, self.distribution)
 
+
+class CROWNDataset(WeightedDataset):
+    def __init__(self, dataset, weight):
+        super(CROWNDataset, self).__init__(dataset, weight)
+
+    def __getitem__(self, item):
+        X, y = self.dataset[item]
+        elem = (X.unsqueeze(0), y, self.weight[item])
+
+        return elem
 
 def main():
     config = load_config(args)
