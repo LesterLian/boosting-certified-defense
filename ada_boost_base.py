@@ -12,12 +12,14 @@ class AdaBoostBase:
                 initialize each base predictor in __init__() function.
             T: # of round for AdaBoost
         """
-        self.dataset = dataset
+
         self.num_samples = dataset.__len__()
         self.base_predictor_list = base_predictor_list
         self.T = T
         self.cur_round = 0
+        self.dataset = dataset
         self.distribution = torch.Tensor([1.0 / self.num_samples] * self.num_samples)
+        self.weighted_data = WeightedDataset(self.dataset, self.distribution)
 
         self.predictor_weight = []
         self.predictor_list = []
@@ -25,11 +27,11 @@ class AdaBoostBase:
         use_cuda = torch.cuda.is_available()
         self.device = torch.device("cuda" if use_cuda else "cpu")
 
-    def gen_new_base_predictor(self, cur_round, weighted_train_loader):
+    def gen_new_base_predictor(self, cur_round, weighted_train_dataset):
         """
         Args:
             cur_round: Current round.
-            weighted_train_loader: Weighted version of the training DataLoader.
+            weighted_train_dataset: Weighted version of the training dataset.
         Returns:
             new_predictor: The generated new predictor.
             error: Weighted error of the new predictor on training data.
@@ -56,8 +58,8 @@ class AdaBoostBase:
             predictor.init_model_params()
 
         for t in range(self.T):
-            train_loader = WeightedDataset(self.dataset, self.distribution)
-            predictor, err, incorrect_pred = self.gen_new_base_predictor(cur_round, train_loader)
+            print(f"running iter {t}")
+            predictor, err, incorrect_pred = self.gen_new_base_predictor(cur_round, self.weighted_data)
             weight, self.distribution = self.update_weight_distribution(err, incorrect_pred)
             self.predictor_list.append(predictor)
             self.predictor_weight.append(weight)
