@@ -2,6 +2,7 @@ import numpy as np
 import torch 
 from torch.utils import data
 
+
 class WeightedDataset(data.Dataset):
     def __init__(self, dataset, weight):
         self.dataset = dataset

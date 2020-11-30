@@ -1,14 +1,15 @@
 import numpy as np
 import torch
-from datasets_wrapper import WeightedDataset
+from dataset_wrapper import WeightedDataset
 from ada_boost_base import AdaBoostBase
+
 
 class AdaBoostPretrained(AdaBoostBase):
     def gen_new_base_predictor(self, cur_round, weighted_train_dataset):
         """
         Args:
             cur_round: Current round.
-            weighted_data_set: Weighted version of the training dataset.
+            weighted_train_dataset: Weighted version of the training dataset.
         Returns:
             new_predictor: The generated new predictor.
             error: Weighted error of the new predictor on training data.

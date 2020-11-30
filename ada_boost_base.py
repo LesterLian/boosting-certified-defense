@@ -1,6 +1,7 @@
 import numpy as np
 import torch
-from datasets_wrapper import WeightedDataset
+from dataset_wrapper import WeightedDataset
+
 
 class AdaBoostBase:
     def __init__(self, dataset, base_predictor_list, T):
@@ -55,9 +56,8 @@ class AdaBoostBase:
             predictor.init_model_params()
 
         for t in range(self.T):
-            train_loader = weighted_data_loader(self.dataset, self.distribution) 
-            predictor, err, incorrect_pred = self.gen_new_base_predictor(cur_round, 
-                    WeightedDataset(self.dataset, self.distribution))
+            train_loader = WeightedDataset(self.dataset, self.distribution)
+            predictor, err, incorrect_pred = self.gen_new_base_predictor(cur_round, train_loader)
             weight, self.distribution = self.update_weight_distribution(err, incorrect_pred)
             self.predictor_list.append(predictor)
             self.predictor_weight.append(weight)
@@ -65,11 +65,11 @@ class AdaBoostBase:
 
     def predict(self, X):
         final_pred = None 
-        for i in range(len(self.predictors_list)):
-            cur_predictor = self.predictors_list[i]
+        for i in range(len(self.predictor_list)):
+            cur_predictor = self.predictor_list[i]
             cur_weight = self.predictor_weight[i]
             if final_pred is None:
-                final_pred = cur_weight * cur_predictor
+                final_pred = cur_weight * cur_predictor(X)
             else:
-                final_pred += cur_weight * cur_predictor
+                final_pred += cur_weight * cur_predictor(X)
         return final_pred        
