@@ -17,4 +17,4 @@ class BasePredictor:
 
     # X is of shape [N, :] where N is the # of test data for prediction.
     def predict(self, X):
-        pass
+        return self.model(X)
