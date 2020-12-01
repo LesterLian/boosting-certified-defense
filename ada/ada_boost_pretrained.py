@@ -10,15 +10,13 @@ class AdaBoostPretrained(AdaBoostBase):
         e_min = 1
         incorrect_pred_min = None
         new_predictor = None
-
         for predictor in self.base_predictor_list:
             predictor.model.eval()
             predictor.model.to(self.device)
             incorrect_pred = torch.zeros(self.num_samples)
             for i, (X, y, _) in tqdm(enumerate(weighted_train_dataset), total=len(weighted_train_dataset)):
                 X = X.to(self.device)
-                output = predictor.predict(X)
-                y_pred = torch.argmax(output, 1)
+                y_pred = predictor.predict(X)
                 incorrect_pred[i] = 1 if y_pred != y else 0
             # incorrect_pred[torch.nonzero(diff, as_tuple=False)] = 1
             error = (incorrect_pred * self.distribution).sum()
