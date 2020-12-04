@@ -16,10 +16,11 @@ class AdaBoostBase:
         self.num_samples = dataset.__len__()
         self.base_predictor_list = base_predictor_list
         self.T = T
+        self.K = len(dataset.classes)
         self.cur_round = 0
-        self.dataset = dataset
+        # self.dataset = dataset
         self.distribution = torch.Tensor([1.0 / self.num_samples] * self.num_samples)
-        self.weighted_data = WeightedDataset(self.dataset, self.distribution)
+        self.weighted_data = WeightedDataset(dataset, self.distribution)
 
         self.predictor_weight = []
         self.predictor_list = []
@@ -64,14 +65,19 @@ class AdaBoostBase:
             self.predictor_list.append(predictor)
             self.predictor_weight.append(weight)
             cur_round += 1
+        self.predictor_weight = [i/sum(self.predictor_weight) for i in self.predictor_weight]
 
     def predict(self, X):
-        final_pred = None 
+        final_pred = torch.zeros((len(X), self.K))
+        X = X.to(self.device)
         for i in range(len(self.predictor_list)):
             cur_predictor = self.predictor_list[i]
-            cur_weight = self.predictor_weight[i]
-            if final_pred is None:
-                final_pred = cur_weight * cur_predictor(X)
-            else:
-                final_pred += cur_weight * cur_predictor(X)
-        return final_pred        
+            cur_weight = self.predictor_weight[i].item()
+            # if final_pred is None:
+            #     final_pred = cur_weight * cur_predictor.predict(X)
+            # else:
+            #     final_pred += cur_weight * cur_predictor.predict(X)
+            class_pred = cur_predictor.predict(X).to('cpu')
+            final_pred.scatter_(1, class_pred.view(-1, 1), cur_weight, reduce='add')
+
+        return final_pred.argmax(1)
