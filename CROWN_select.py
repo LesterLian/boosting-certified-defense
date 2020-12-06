@@ -15,7 +15,7 @@ class PretrainedSAMME(AdaBoostPretrained, AdaBoostSamme):
         super(PretrainedSAMME, self).__init__(dataset, base_predictor_list, T)
         # TODO recognize number of class
         # self.K = 10
-        self.weighted_data = torch.utils.data.DataLoader(self.weighted_data, batch_size=256, shuffle=True)
+        self.weighted_data = torch.utils.data.DataLoader(self.weighted_data, batch_size=256, shuffle=False)
 #         self.weighted_data = CROWNDataset(self.dataset, self.distribution)
 #
 #
@@ -37,7 +37,7 @@ class CROWNPredictor(BasePredictor):
     def predict(self, X):
         X = X.to('cuda')
         output = self.model(X)
-        return output.argmax(dim=1)
+        return output
 
 
 def main():
@@ -66,12 +66,15 @@ def main():
     print(ada.predictor_list)
     print(ada.predictor_weight)
 
+    print(f'\n{"Testing":=^20}\n')
     with torch.no_grad():
+
         base_max = 0
-        for predictor in ada.predictor_list:
+        for idx in ada.predictor_list:
+            predictor = ada.base_predictor_list[idx]
             correct = 0
             for X, y in test_data:
-                y_pred = predictor.predict(X).to('cpu')
+                y_pred = predictor.predict(X).argmax(dim=1).to('cpu')
                 correct += (y_pred == y).sum()
             if correct > base_max:
                 base_max = correct

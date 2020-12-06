@@ -17,7 +17,7 @@ class AdaBoostPretrained(AdaBoostBase):
             incorrect_pred = None
             for i, (X, y, _) in tqdm(enumerate(weighted_train_dataset), total=len(weighted_train_dataset)):
                 X = X.to(self.device)
-                y_pred = predictor.predict(X).to('cpu')
+                y_pred = predictor.predict(X).argmax(dim=1).to('cpu')
                 if incorrect_pred is None:
                     incorrect_pred = y_pred != y
                 else:
@@ -29,7 +29,7 @@ class AdaBoostPretrained(AdaBoostBase):
                 new_predictor = predictor_idx
         if e_min == 1 or new_predictor is None or incorrect_pred is None:
             raise ValueError("Didn't generate new predictor")
-        print(f'choose model {predictor_idx} with error {error}')
+        print(f'choose model {new_predictor} with error {e_min}')
 
         return new_predictor, e_min, incorrect_pred_min
 

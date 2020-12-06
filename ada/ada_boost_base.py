@@ -70,14 +70,11 @@ class AdaBoostBase:
     def predict(self, X):
         final_pred = torch.zeros((len(X), self.K))
         X = X.to(self.device)
-        for i in range(len(self.predictor_list)):
-            cur_predictor = self.predictor_list[i]
-            cur_weight = self.predictor_weight[i].item()
-            # if final_pred is None:
-            #     final_pred = cur_weight * cur_predictor.predict(X)
-            # else:
-            #     final_pred += cur_weight * cur_predictor.predict(X)
-            class_pred = cur_predictor.predict(X).to('cpu')
-            final_pred.scatter_(1, class_pred.view(-1, 1), cur_weight, reduce='add')
+        for i, weight in zip(self.predictor_list, self.predictor_weight):
+            cur_predictor = self.base_predictor_list[i]
+            cur_weight = weight.item()
+            # class_pred = cur_predictor.predict(X).to('cpu')
+            # final_pred.scatter_(1, class_pred.view(-1, 1), cur_weight, reduce='add')
+            final_pred += cur_weight * cur_predictor.predict(X).to('cpu')
 
-        return final_pred.argmax(1)
+        return final_pred.argmax(dim=1)
