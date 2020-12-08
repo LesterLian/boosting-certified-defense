@@ -18,7 +18,8 @@ class AdaBoostPretrained(AdaBoostBase):
                 X = X.to(self.device)
                 y_pred = predictor.predict(X)
                 incorrect_pred[i] = 1 if y_pred != y else 0
-            # incorrect_pred[torch.nonzero(diff, as_tuple=False)] = 1
+                #### accumulate errors in a batch manner, using the third term in data_loader, the weight
+                # incorrect_pred[torch.nonzero(diff, as_tuple=False)] = 1
             error = (incorrect_pred * self.distribution).sum()
             if error < e_min:
                 e_min = error

@@ -20,7 +20,8 @@ class AdaBoostBase:
         self.dataset = dataset
         self.distribution = torch.Tensor([1.0 / self.num_samples] * self.num_samples)
         self.weighted_data = WeightedDataset(self.dataset, self.distribution)
-
+        #### parallel using dataloader
+        
         self.predictor_weight = []
         self.predictor_list = []
 
@@ -61,6 +62,7 @@ class AdaBoostBase:
             print(f"running iter {t}")
             predictor, err, incorrect_pred = self.gen_new_base_predictor(cur_round, self.weighted_data)
             weight, self.distribution = self.update_weight_distribution(err, incorrect_pred)
+            ### update the distribution to the dataset
             self.predictor_list.append(predictor)
             self.predictor_weight.append(weight)
             cur_round += 1
@@ -70,8 +72,9 @@ class AdaBoostBase:
         for i in range(len(self.predictor_list)):
             cur_predictor = self.predictor_list[i]
             cur_weight = self.predictor_weight[i]
+            cur_predictor.model.eval()
             if final_pred is None:
-                final_pred = cur_weight * cur_predictor(X)
+                final_pred = cur_weight * cur_predictor.model(X)
             else:
-                final_pred += cur_weight * cur_predictor(X)
+                final_pred += cur_weight * cur_predictor.model(X)
         return final_pred        
