@@ -14,6 +14,6 @@ class AdaBoostSamme(AdaBoostBase):
         new_distributions = self.distribution * (a ** incorrect_pred)
         new_distributions = new_distributions / new_distributions.sum()
         self.distribution = new_distributions
-        self.weighted_data.dataset.weight = new_distributions
+        self.weighted_data.dataset.distribution = new_distributions
 
         return torch.log(a)

@@ -22,7 +22,7 @@ class BasePredictor:
         """
         Train the model using given data.
         Args:
-            weighted_data: WeightedDataLoader provides __getitem__ that returns (feature, target, weight).
+            weighted_data: WeightedDataLoader provides __getitem__ that returns (feature, target, distribution).
         """
         pass
 

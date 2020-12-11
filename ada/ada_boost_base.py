@@ -7,10 +7,12 @@ from typing import Iterable, Union
 
 
 class AdaBoostBase:
-    def __init__(self, dataset: Union[Dataset, DataLoader], base_predictor_list: Iterable[BasePredictor], T):
+    def __init__(self, dataset: Union[Dataset, DataLoader], base_predictor_list: Iterable[BasePredictor],
+                 T, batch_size=256, shuffle=False, num_workers=0):
         """
         Args:
             dataset: Torch.utils.data.Dataset or DataLoader. Should implement __len__() and __getitem__()
+                if it's Dataset
             base_predictor_list: A list of class BasePredictor objects as base predictors.
                 AdaBoost will initialize each base predictor in __init__() function.
             T: # of round for AdaBoost
@@ -24,7 +26,8 @@ class AdaBoostBase:
         self.cur_round = 0
         # self.distribution is used in update_weight_distribution
         self.distribution = torch.Tensor([1.0 / self.num_samples] * self.num_samples)
-        self.weighted_data = WeightedDataLoader(dataset, self.distribution)
+        self.weighted_data = WeightedDataLoader(dataset, self.distribution,
+                                                batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
         self.K = len(self.weighted_data.dataset.dataset.classes)
 
         self.predictor_weight = []
@@ -52,7 +55,7 @@ class AdaBoostBase:
             incorrect_pred: A tensor of shape [self.num_samples] indicating the incorrect
                 prediction.
         Returns:
-            weight: The weight of the new base predictor.
+            distribution: The distribution of the new base predictor.
         """
         pass
 
@@ -62,7 +65,7 @@ class AdaBoostBase:
             weight = self.update_model_weight(err, incorrect_pred)
             self.predictor_list.append(predictor)
             self.predictor_weight.append(weight)
-        # Normalize model weight, not necessary but easy to compare
+        # Normalize model distribution, not necessary but easy to compare
         self.predictor_weight = [i/sum(self.predictor_weight) for i in self.predictor_weight]
 
     def predict(self, X):
