@@ -5,7 +5,7 @@ import os
 
 import torch
 
-from ada import AdaBoostPretrained, AdaBoostSamme, BasePredictor, WeightedDataset
+from ada import AdaBoostPretrained, AdaBoostSamme, BasePredictor, WeightedDataLoader
 from argparser import argparser
 from config import load_config, config_modelloader, config_dataloader
 
@@ -13,31 +13,17 @@ from config import load_config, config_modelloader, config_dataloader
 class PretrainedSAMME(AdaBoostPretrained, AdaBoostSamme):
     def __init__(self, dataset, base_predictor_list, T):
         super(PretrainedSAMME, self).__init__(dataset, base_predictor_list, T)
-        # TODO recognize number of class
-        # self.K = 10
-        self.weighted_data = torch.utils.data.DataLoader(self.weighted_data, batch_size=256, shuffle=False)
-#         self.weighted_data = CROWNDataset(self.dataset, self.distribution)
-#
-#
-# class CROWNDataset(WeightedDataset):
-#     def __init__(self, dataset, weight):
-#         super(CROWNDataset, self).__init__(dataset, weight)
-#
-#     def __getitem__(self, item):
-#         X, y = self.dataset[item]
-#         elem = (X.unsqueeze(0), y, self.weight[item])
-#
-#         return elem
+        # self.weighted_data = torch.utils.data.DataLoader(self.weighted_data, batch_size=256, shuffle=False)
 
 
-class CROWNPredictor(BasePredictor):
-    def __init__(self, model):
-        super(CROWNPredictor, self).__init__(model)
-
-    def predict(self, X):
-        X = X.to('cuda')
-        output = self.model(X)
-        return output
+# class CROWNPredictor(BasePredictor):
+#     def __init__(self, model):
+#         super(CROWNPredictor, self).__init__(model)
+#
+#     def predict(self, X):
+#         X = X.to('cuda')
+#         output = self.model(X)
+#         return output
 
 
 def main():
@@ -51,8 +37,8 @@ def main():
     train_data, test_data = config_dataloader(config, **global_eval_config["loader_params"])
     # Boost
     if args.load_ada is None:
-        ada = PretrainedSAMME(train_data.dataset,
-                              [CROWNPredictor(model) for model in models],
+        ada = PretrainedSAMME(train_data,
+                              [BasePredictor(model) for model in models],
                               T=args.iteration)
 
         ada.train()
