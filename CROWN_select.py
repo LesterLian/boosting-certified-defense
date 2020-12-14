@@ -12,7 +12,7 @@ from config import load_config, config_modelloader, config_dataloader
 
 class PretrainedSAMME(AdaBoostPretrained, AdaBoostSamme):
     def __init__(self, dataset, base_predictor_list, T):
-        super(PretrainedSAMME, self).__init__(dataset, base_predictor_list, T)
+        super(PretrainedSAMME, self).__init__(dataset, base_predictor_list, T, shuffle=False)
         # self.weighted_data = torch.utils.data.DataLoader(self.weighted_data, batch_size=256, shuffle=False)
 
 

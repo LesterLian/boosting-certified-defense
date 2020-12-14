@@ -1,4 +1,4 @@
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, RandomSampler, SequentialSampler, BatchSampler
 from typing import Union
 
 
@@ -20,8 +20,22 @@ class WeightedDataLoader(DataLoader):
             self.__dict__ = dataset.__dict__.copy()
             self.__dict__['_DataLoader__initialized'] = False
             self.dataset: WeightedDataset = WeightedDataset(dataset.dataset, distribution)
-        # self.dataset = dataset
-        # self.distribution = distribution
+            if shuffle and isinstance(self.sampler, RandomSampler):
+                self.sampler = RandomSampler(self.dataset, generator=self.generator)
+            elif not shuffle:
+                self.sampler = SequentialSampler(self.dataset)
+            self.batch_sampler.sampler = self.sampler
+            # self.dataset: WeightedDataset = WeightedDataset(dataset.dataset, distribution)
+            # super(WeightedDataLoader, self).__init__(dataset=self.dataset, batch_size=batch_size,
+            #                                          shuffle=shuffle, num_workers=num_workers)
+            # sampler = self.sampler
+            # batch_sampler = self.batch_sampler
+            # dataset_tmp = self.dataset
+            # self.__dict__ = dataset.__dict__.copy()
+            # self.__dict__['_DataLoader__initialized'] = False
+            # self.sampler = sampler
+            # self.batch_sampler = batch_sampler
+            # self.dataset = dataset_tmp
 
 
 class WeightedDataset(Dataset):
@@ -30,9 +44,7 @@ class WeightedDataset(Dataset):
         self.distribution = distribution
 
     def __getitem__(self, index):
-        elem = list(self.dataset[index])
-        elem.append(self.distribution[index])
-        return tuple(elem)
+        return (*self.dataset[index], self.distribution[index], index)
 
     def __len__(self):
         return len(self.dataset)

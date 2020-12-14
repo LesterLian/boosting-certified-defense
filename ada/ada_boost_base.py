@@ -48,7 +48,7 @@ class AdaBoostBase:
         """
         pass
 
-    def update_model_weight(self, error, incorrect_pred):
+    def update_model_weight(self, error, incorrect_pred, index):
         """
         Args:
             error: The weighted error for new base predictor.
@@ -61,8 +61,8 @@ class AdaBoostBase:
 
     def train(self):
         for t in range(self.T):
-            predictor, err, incorrect_pred = self.gen_new_base_predictor(t)
-            weight = self.update_model_weight(err, incorrect_pred)
+            predictor, err, incorrect_pred, index = self.gen_new_base_predictor(t)
+            weight = self.update_model_weight(err, incorrect_pred, index)
             self.predictor_list.append(predictor)
             self.predictor_weight.append(weight)
         # Normalize model distribution, not necessary but easy to compare
