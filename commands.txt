@@ -1,0 +1,48 @@
+If things run too slowly, can decrease N (e.g. by a factor of 10).
+The only thing changing is the sigma (e.g. 0.12) and the name of the output file.
+
+model=""
+weights=""
+output="data/certification_output_0.12"
+python code/certify.py cifar10 $model 0.12 $output --N 100000 --weights $weights
+
+model=""
+weights=""
+output="data/certification_output_0.25"
+python code/certify.py cifar10 $model 0.25 $output --N 100000 --weights $weights
+
+model=""
+weights=""
+output="data/certification_output_0.5"
+python code/certify.py cifar10 $model 0.5 $output --N 100000 --weights $weights
+
+
+model=""
+weights=""
+output="data/certification_output_0.75"
+python code/certify.py cifar10 $model 0.75 $output --N 100000 --weights $weights
+
+model=""
+weights=""
+output="data/certification_output_1.00"
+python code/certify.py cifar10 $model 1.00 $output --N 100000 --weights $weights
+
+model=""
+weights=""
+output="data/certification_output_1.25"
+python code/certify.py cifar10 $model 1.25 $output --N 100000 --weights $weights
+
+model=""
+weights=""
+output="data/certification_output_1.50"
+python code/certify.py cifar10 $model 1.50 $output --N 100000 --weights $weights
+
+model=""
+weights=""
+output="data/certification_output_1.75"
+python code/certify.py cifar10 $model 1.75 $output --N 100000 --weights $weights
+
+model=""
+weights=""
+output="data/certification_output_2.00"
+python code/certify.py cifar10 $model 2.00 $output --N 100000 --weights $weights
