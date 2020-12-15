@@ -4,7 +4,7 @@ import sys
 import torch
 import torchvision
 
-from ada import AdaBoostPretrained, AdaBoostSamme, BasePredictor, WeightedDataset
+from ada import AdaBoostPretrained, AdaBoostSamme, BasePredictor, WeightedDataLoader
 
 
 class PretrainedSAMME(AdaBoostPretrained, AdaBoostSamme):
