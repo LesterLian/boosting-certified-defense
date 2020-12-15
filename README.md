@@ -5,16 +5,6 @@
 python general_select.py -T 1
 ```
 
-<<<<<<< HEAD
-### Change log
-
-Dec 11, 2020
-- AdaBoostBase can take Dataset or DataLoader and always construct DataLoader under the hood and store at self.weighted_data.
-- AdaBoostBase takes arguments for DataLoader
-- BasePredictor.predict(X) should return class id. Use BasePredictor.model(X) for raw output.
-- BasePredictor.predict() only needs to be overwritten if the output of model(X) doesn't match number of classes.
-- Number of classes K is read from Dateset.classes; I'm not sure if all Dataset has that attribute.
-=======
 
 
 I found it helpful to read the README's from the following two github repo's to use the right commands:
@@ -43,4 +33,3 @@ python code/certify.py cifar10 $model 0.12 $output --skip 5000 --batch 400 --N 1
 
 The optional command-line arguments I used here were for debugging. They can be left out when getting the actual results.
 Note the destination file and sigma (here, it's 0.12) can be changed with running a different experiment. 
->>>>>>> cb039d8088cbbcaad4b7419da0c6af0d3a9767da
