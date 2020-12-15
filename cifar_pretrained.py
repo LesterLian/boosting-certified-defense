@@ -68,6 +68,7 @@ def main():
     # log_file = open(os.path.join(args.weight_dir, 'log_{:s}.txt'.format(st)), "w")
     # Load pre-trained models
     weight_paths = [f for f in os.listdir(args.weight_dir) if os.path.isfile(os.path.join(args.weight_dir, f))]
+    print("model list: ", weight_paths)
     models = []
     print("architecture: {}".format(args.arch))
     for i in range(len(weight_paths)):
