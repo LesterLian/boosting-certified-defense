@@ -3,7 +3,7 @@ from typing import Union
 
 
 class WeightedDataLoader(DataLoader):
-    def __init__(self, dataset: Union[Dataset, DataLoader], distribution, batch_size=256, shuffle=False, num_workers=0):
+    def __init__(self, dataset: Union[Dataset, DataLoader], distribution, batch_size=256, shuffle=False, num_workers=4):
         """
         Args:
             dataset: Torch.utils.data.Dataset or DataLoader.

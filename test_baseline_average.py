@@ -2,22 +2,18 @@ import argparse
 import sys
 import os
 import time
-import datetime
 
 import torch
 import torchvision
 from torchvision import transforms, datasets
-
-from ada import AdaBoostPretrained, AdaBoostSamme, BasePredictor, WeightedDataLoader
-
+from cifar_pretrained import AverageMeter, accuracy
+from ada import AdaBoostPretrained, AdaBoostSamme, BasePredictor, WeightedDataset
 
 class PretrainedSAMME(AdaBoostPretrained, AdaBoostSamme):
     def __init__(self, dataset, base_predictor_list, T):
         super(PretrainedSAMME, self).__init__(dataset, base_predictor_list, T)
         # TODO recognize number of class
         self.K = 10
-        # self.log = log
-
 
 # Overwrite predictor.predict() because the input and output dimension doesn't match for MNIST and ResNet
 class MyPredictor(BasePredictor):
@@ -25,51 +21,12 @@ class MyPredictor(BasePredictor):
         super(MyPredictor, self).__init__(model)
 
     def predict(self, X):
-        output = self.model(X)
-        # print(output.shape)
-        return torch.argmax(output, dim=1)
-
-class AverageMeter(object):
-    """Computes and stores the average and current value"""
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
-
-def accuracy(output, target, topk=(1,)):
-    """Computes the accuracy over the k top predictions for the specified values of k"""
-    with torch.no_grad():
-        maxk = max(topk)
-        batch_size = target.size(0)
-
-        _, pred = output.topk(maxk, 1, True, True)
-        pred = pred.t()
-        correct = pred.eq(target.view(1, -1).expand_as(pred))
-
-        res = []
-        for k in topk:
-            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
-            res.append(correct_k.mul_(100.0 / batch_size))
-        return res
+        output = self.model(X.unsqueeze(0))
+        return torch.argmax(output)
 
 def main():
-    # ts = time.time()
-    # st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d-%H-%M-%S')
-    # log_file = open(os.path.join(args.weight_dir, 'log_{:s}.txt'.format(st)), "w")
-    # Load pre-trained models
     weight_paths = [f for f in os.listdir(args.weight_dir) if os.path.isfile(os.path.join(args.weight_dir, f))]
     models = []
-    print("architecture: {}".format(args.arch))
     for i in range(len(weight_paths)):
         if args.arch == 'cifar_resnet110':
             import archs.cifar_resnet as resnet
@@ -86,7 +43,6 @@ def main():
 
     # Load dataset
     dataset_path = os.path.join('datasets', 'dataset_cache')
-    print("dataset: {}".format(args.dataset))
     if args.dataset == 'cifar':
         train_data = datasets.CIFAR10(dataset_path, train=True, download=True, transform=transforms.Compose([
                 # transforms.RandomCrop(32, padding=4),
@@ -105,8 +61,10 @@ def main():
     ada = PretrainedSAMME(train_data,
                           # model(X) should output class number or something comparable to elements in datasets.targets
                           [MyPredictor(model) for model in models],
-                          args.iteration)
-    ada.train()
+                          T=10)
+    ada.predictor_list = [MyPredictor(model) for model in models]
+    ada.predictor_weight = [1/len(models) for model in models]
+    print(ada.predictor_weight)
 
     ### test on clean data
     top1 = AverageMeter()
@@ -122,8 +80,6 @@ def main():
             top5.update(prec5[0], input.size(0))
     print('Clean Test Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f}'.format(top1=top1, top5=top5))
 
-    print(ada.predictor_list)
-    print(ada.predictor_weight)
 
 
 if __name__ == '__main__':
@@ -134,8 +90,6 @@ if __name__ == '__main__':
                         help='model architecture')
     parser.add_argument('--dataset', type=str, 
                         help='cifar/mnist')
-    parser.add_argument('--iteration', '-T', type=int, default=10, 
-                        help='the maximum number of running Adaboost')
 
     args = parser.parse_args()
     main()
