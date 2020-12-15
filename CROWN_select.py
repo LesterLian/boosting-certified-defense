@@ -33,7 +33,7 @@ def main():
     if args.models is not None:
         config["models_path"] = args.models
     models, model_names = config_modelloader(config, load_pretrain=True)
-    models = [BasePredictor(model) for model in models]
+    models = [BasePredictor(model.to('cuda')) for model in models]
     # Initialize Data
     train_data, test_data = config_dataloader(config, **global_eval_config["loader_params"])
     # Boost
@@ -51,7 +51,6 @@ def main():
             pickle.dump(ada, f)
     else:
         ada = pickle.load(open(args.load_ada, 'rb'))
-        ada.base_predictor_list = [BasePredictor(model) for model in models]
     print(ada.predictor_list)
     print(ada.predictor_weight)
 
@@ -69,12 +68,17 @@ def main():
                 correct += (y_pred == y).sum()
             if correct > base_max:
                 base_max = correct
-        correct = 0
+        base = PretrainedSAMME(train_data, models, T=20)
+        base.predictor_weight = ada.predictor_weight
+        correct = [0, 0]
         for X, y in test_data:
+            y_pred = base.predict(X).to('cpu')
+            correct[0] += (y_pred == y).sum()
             y_pred = ada.predict(X).to('cpu')
-            correct += (y_pred == y).sum()
+            correct[1] += (y_pred == y).sum()
         print(f'max clean accuracy of base model: {base_max/len(test_data.dataset)}')
-        print(f'clean accuracy: {correct/len(test_data.dataset)}')
+        print(f'average clean accuracy of base model: {correct[0]/len(test_data.dataset)}')
+        print(f'clean accuracy: {correct[1]/len(test_data.dataset)}')
 
 
 if __name__ == '__main__':
