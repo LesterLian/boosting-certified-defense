@@ -76,11 +76,12 @@ class AdaBoostBase:
         Returns:
             final_prediction: The final predicted class id.
         """
-        final_pred = torch.zeros((len(X), self.K))
+        final_pred = torch.zeros((len(X), self.K)).cuda()
         X = X.to(self.device)
         for i, weight in zip(self.predictor_list, self.predictor_weight):
             cur_predictor = self.base_predictor_list[i]
-            cur_weight = weight.item()
-            final_pred += cur_weight * cur_predictor.model(X).to('cpu')
+            cur_predictor.model.eval()
+            cur_weight = weight.cuda()
+            final_pred += cur_weight * cur_predictor.model(X)
 
-        return final_pred.argmax(dim=1)
+        return final_pred
