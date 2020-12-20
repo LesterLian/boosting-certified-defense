@@ -19,7 +19,7 @@ IMAGENET_LOC_ENV = "IMAGENET_DIR"
 IMAGENET_ON_PHILLY_DIR = "/hdfs/public/imagenet/2012/"
 
 # list of all datasets
-DATASETS = ["imagenet", "imagenet32", "cifar10"]
+DATASETS = ["imagenet", "imagenet32", "cifar10", "mnist"]
 
 
 def get_dataset(dataset: str, split: str) -> Dataset:
@@ -41,7 +41,7 @@ def get_num_classes(dataset: str):
     """Return the number of classes in the dataset. """
     if dataset == "imagenet":
         return 1000
-    elif dataset == "cifar10":
+    elif dataset in ["cifar10", "mnist"]:
         return 10
 
 

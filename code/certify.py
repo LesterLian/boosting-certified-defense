@@ -4,17 +4,17 @@ import datetime
 import os
 from time import time
 
-from architectures import get_architecture
-from core import Smooth
-from datasets import get_dataset, DATASETS, get_num_classes
+from torchvision import transforms, datasets
+from code.core import Smooth
 import torch
 
 
 parser = argparse.ArgumentParser(description='Certify many examples')
-parser.add_argument("dataset", choices=DATASETS, help="which dataset")
+parser.add_argument("dataset", help="which dataset")
 parser.add_argument("weight_dir", type=str, help="path to the directory where base models are stored")
 parser.add_argument("sigma", type=float, help="noise hyperparameter")
 parser.add_argument("outfile", type=str, help="output file")
+parser.add_argument('--arch', type=str, help='architecture')
 parser.add_argument("--batch", type=int, default=1000, help="batch size")
 parser.add_argument("--skip", type=int, default=1, help="how many examples to skip")
 parser.add_argument("--max", type=int, default=-1, help="stop after this many examples")
@@ -22,7 +22,7 @@ parser.add_argument("--split", choices=["train", "test"], default="test", help="
 parser.add_argument("--N0", type=int, default=100)
 parser.add_argument("--N", type=int, default=100000, help="number of samples to use")
 parser.add_argument("--alpha", type=float, default=0.001, help="failure probability")
-parser.add_argument("--ensemble_weights", type=str, defalut=None, help='path to saved set of weights')
+parser.add_argument("--ensemble_weights", type=str, default=None, help='path to saved set of weights')
 parser.add_argument('--ensemble_index', type=str, default=None, help='adaboost ensemble model index')
 args = parser.parse_args()
 
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     for i in index:
         path = paths[i]
         if torch.cuda.is_available():
-            checkpoint = torch.load(os.path.join(args.weight_dir, path)
+            checkpoint = torch.load(os.path.join(args.weight_dir, path))
         else:
             checkpoint = torch.load(path, map_location=torch.device('cpu'))
         if args.arch == 'cifar_resnet110':
@@ -70,14 +70,20 @@ if __name__ == "__main__":
     # base_classifier2.load_state_dict(checkpoint['state_dict'])
 
     # create the smooothed classifier g
-    smoothed_classifier = Smooth(base_classifiers, weights, get_num_classes(args.dataset), args.sigma)
+    smoothed_classifier = Smooth(base_classifiers, weights, 10, args.sigma)
 
     # prepare output file
     f = open(args.outfile, 'w')
     print("idx\tlabel\tpredict\tradius\tcorrect\ttime", file=f, flush=True)
 
     # iterate through the dataset
-    dataset = get_dataset(args.dataset, args.split)
+    # Load dataset
+    dataset_path = os.path.join('datasets', 'dataset_cache')
+    print("dataset: {}".format(args.dataset))
+    if args.dataset == 'cifar':
+        dataset = datasets.CIFAR10(dataset_path, train=False, download=True, transform=transforms.ToTensor())
+    elif args.dataset == 'mnist':
+        dataset = datasets.MNIST(dataset_path, train=False, download=True, transform=transforms.ToTensor())
     for i in range(len(dataset)):
 
         # only certify every args.skip examples, and stop after args.max examples
