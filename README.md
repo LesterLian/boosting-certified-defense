@@ -10,6 +10,7 @@ For this part of the implementation, we train our base models using smoothed adv
 * `./archs`: this folder stores model architecture files we use as base models for boosting smoothed classifiers 
 * `./analysis`: directly copied from [this repo](https://github.com/Hadisalman/smoothing-adversarial) for analyzing certification results of smoothed classifiers.    
 * `./code`: directly copied from [this repo](https://github.com/Hadisalman/smoothing-adversarial) for running certification of smoothed classifiers.
+* `./CRWON_select_certified_error.py`: this file evaluate the performance of individual or ensemble of classifiers trained with CRWON-IBP on clean andcertified accuracy. 
 
 ### Commands
 To boost a set of pretrained base model with architecture `${arch}` stored at `${path}` on dataset `${dataset}` for `${T}` iterations, run:
@@ -25,3 +26,8 @@ To certify an ensemble of the above base model on the above dataset with l2 radi
 python ./certify.py ${dataset} ${path} ${sigma} ${output_log} --arch ${arch} --N ${N} --skip ${skip}
 ```
 `${N}` is the number of noise samples in the Monte-Carlo certification algorithm for smoothed classifiers. `${skip}` can be set to reduce the number of test samples. For example, for CIFAR-10 with 10,000 validation samples, setting `${skip}` to 20 will only test 500 images from the validation set. This parameter can be chosen to reduce the computational cost during certification. 
+```
+To evaluate ensemble of pre-trained CROWN-IBP models, run:
+```
+python CROWN_select_certified_error.py "eval_params:epsilon=${epsilon}" --config ${config_path} --path_prefix ${crown_ibp_pretrained_model_path} --load_ada ${path_to_adaboost_weight} --iteration {iteration}
+```
