@@ -81,6 +81,7 @@ python ./certify.py ${dataset} ${path} ${sigma} ${output_log} --arch ${arch} --N
 `${N}` is the number of noise samples in the Monte-Carlo certification algorithm for smoothed classifiers. `${skip}` can be set to reduce the number of test samples. For example, for CIFAR-10 with 10,000 validation samples, setting `${skip}` to 20 will only test 500 images from the validation set. This parameter can be chosen to reduce the computational cost during certification. 
 
 ## Reference
-
-Part of the codes depends on [CROWN-IBP](https://github.com/huanzhang12/CROWN-IBP).
+Part of our code is completed base on the implementations from 
+[CROWN-IBP](https://github.com/huanzhang12/CROWN-IBP) and 
+[Randomized Smoothing](https://github.com/Hadisalman/smoothing-adversarial).    
 We appreciate very much for their great works.
