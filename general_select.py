@@ -10,18 +10,16 @@ from ada import AdaBoostPretrained, AdaBoostSamme, BasePredictor, WeightedDataLo
 class PretrainedSAMME(AdaBoostPretrained, AdaBoostSamme):
     def __init__(self, dataset, base_predictor_list, T):
         super(PretrainedSAMME, self).__init__(dataset, base_predictor_list, T)
-        # TODO recognize number of class
-        self.K = 10
 
 
-# Overwrite predictor.predict() because the input and output dimension doesn't match for MNIST and ResNet
+# Overwrite predictor.predict() because the output dimension doesn't match for MNIST and ResNet
 class MyPredictor(BasePredictor):
     def __init__(self, model):
         super(MyPredictor, self).__init__(model)
 
     def predict(self, X):
-        output = self.model(X.unsqueeze(0))
-        return torch.argmax(output)
+        output = self.model(X).remainder(10)
+        return torch.argmax(output, dim=1)
 
 
 def main():
