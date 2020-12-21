@@ -53,6 +53,7 @@ For this part of the implementation, we train our base models using smoothed adv
 * `./archs`: this folder stores model architecture files we use as base models for boosting smoothed classifiers 
 * `./analysis`: directly copied from [this repo](https://github.com/Hadisalman/smoothing-adversarial) for analyzing certification results of smoothed classifiers.    
 * `./code`: directly copied from [this repo](https://github.com/Hadisalman/smoothing-adversarial) for running certification of smoothed classifiers.
+* `./CRWON_select_certified_error.py`: this file evaluate the performance of individual or ensemble of classifiers trained with CRWON-IBP on clean andcertified accuracy. 
 
 ### Commands
 To boost a set of pretrained base model with architecture `${arch}` stored at `${path}` on dataset `${dataset}` for `${T}` iterations, run:
