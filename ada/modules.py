@@ -1,3 +1,4 @@
+import wandb
 from torch import nn
 from torch.nn import functional as F
 
@@ -42,3 +43,13 @@ def get_weighted_ce(distribution):
             return torch.dot(loss, self.distribution)
 
     return WeightedCE
+
+
+def init_logger(config: dict):
+    wandb.init(project="AdaDL", entity="lester")
+    wandb.config = config
+    wandb.run.name = '_'.join([f'{k}{v}' for k, v in config.items()])
+
+
+def log(logs, step=1):
+    wandb.log(logs, step=step)

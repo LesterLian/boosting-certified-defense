@@ -15,6 +15,9 @@ class PretrainedSAMME(AdaBoostPretrained, AdaBoostSamme):
         super(PretrainedSAMME, self).__init__(dataset, base_predictor_list, T, shuffle=False)
         # self.weighted_data = torch.utils.data.DataLoader(self.weighted_data, batch_size=256, shuffle=False)
 
+    def predict(self, X):
+        return super(PretrainedSAMME, self).predict(X).argmax(dim=1)
+
 
 # class CROWNPredictor(BasePredictor):
 #     def __init__(self, model):

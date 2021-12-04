@@ -15,6 +15,6 @@ class AdaBoostSamme(AdaBoostBase):
         new_distributions = new_distributions / new_distributions.sum()
         self.distribution[index] = new_distributions
         # self.weighted_data.dataset.distribution = new_distributions
-        print(f"a: {a.item()}")
+        # print(f"a: {a.item()}")
 
         return torch.log(a)

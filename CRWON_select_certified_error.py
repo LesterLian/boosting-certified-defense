@@ -7,17 +7,22 @@ import copy
 import torch
 
 from ada import AdaBoostPretrained, AdaBoostSamme, BasePredictor, WeightedDataLoader
+from ada.modules import init_logger, log
 from bound_layers import BoundSequential
 from eps_scheduler import EpsilonScheduler
 from argparser import argparser
 from config import load_config, config_modelloader, config_dataloader
 from train import Train, Logger
+from train_ada import Train as TrainAda
 
 
 class PretrainedSAMME(AdaBoostPretrained, AdaBoostSamme):
     def __init__(self, dataset, base_predictor_list, T):
         super(PretrainedSAMME, self).__init__(dataset, base_predictor_list, T, shuffle=False)
         # self.weighted_data = torch.utils.data.DataLoader(self.weighted_data, batch_size=256, shuffle=False)
+
+    def predict(self, X):
+        return super(PretrainedSAMME, self).predict(X).argmax(dim=1)
 
 
 # class CROWNPredictor(BasePredictor):
@@ -33,6 +38,13 @@ class PretrainedSAMME(AdaBoostPretrained, AdaBoostSamme):
 def main():
     config = load_config(crown_args)
     global_eval_config = config["eval_params"]
+    if args.epsilon is not None:
+        global_eval_config['epsilon'] = args.epsilon
+
+    init_logger({
+        "epsilon": global_eval_config['epsilon'],
+        "T": args.iteration,
+    })
 
     if args.models is not None:
         config["models_path"] = args.models
@@ -51,12 +63,14 @@ def main():
         dump_name = os.path.basename(os.path.splitext(crown_args.config)[0])
         ada.weighted_data = None
         ada.base_predictor_list = None
-        with open(f'../ada_{dump_name}_T{ada.T}', "wb") as f:
+        with open(f'../ada_{dump_name}_eps{args.epsilon}_T{ada.T}', "wb") as f:
             pickle.dump(ada, f)
         model_log_name = 'test'
     else:
         ada = pickle.load(open(args.load_ada, 'rb'))
         ada.base_predictor_list = [BasePredictor(model) for model in models]
+        ada.predictor_list = ada.predictor_list[:args.iteration]
+        ada.predictor_weight = ada.predictor_weight[:args.iteration]
         model_log_name = f'{os.path.basename(args.load_ada)}'
     print(ada.predictor_list)
     print(ada.predictor_weight)
@@ -101,6 +115,10 @@ def main():
         print(f'min clean error of base model: {1.0 - base_min/len(test_data.dataset)}')
         print(f'uniform clean error: {1.0 - uniform_correct/len(test_data.dataset)}')
         print(f'ada clean error: {1.0 - correct/len(test_data.dataset)}')
+        log({'AdaBoost Clean': 1.0 - correct/len(test_data.dataset),
+             'Uniform Clean': 1.0 - uniform_correct/len(test_data.dataset),
+             'Single Best Clean': 1.0 - base_max/len(test_data.dataset),
+             'Single Worst Clean': 1.0 - base_min/len(test_data.dataset)})
     
     # Evaluating certified accuracy
     print(f'\n{"Eval certified error":=^20}\n')
@@ -124,7 +142,7 @@ def main():
         errs = []
 
         for idx, base_model_idx in enumerate(ada.predictor_list):
-            if args.iteration > 0 and idx >= args.iteration: break 
+            if args.iteration > 0 and idx >= args.iteration: break
             model = models[base_model_idx].model
             # make a copy of global training config, and update per-model config
 
@@ -132,7 +150,8 @@ def main():
             model = model.cuda()
             train_data, test_data = config_dataloader(config, **eval_config["loader_params"])
 
-            logger = Logger(open('./model_log/{model_log_name}_{idx}.log', "w"))
+            logger = Logger(open(f'./model_log/{model_log_name}_{idx}.log',
+                                 "w"))
             # evaluate
             robust_err, err, model_lb_batch = Train(model, 0, test_data, EpsilonScheduler("linear", 0, 0, eps, eps, 1), eps, norm, logger, verbose, False, None, method, **method_param)
             model_lb = torch.cat(model_lb_batch, 0)
@@ -159,7 +178,8 @@ def main():
             model = model.cuda()
             train_data, test_data = config_dataloader(config, **eval_config["loader_params"])
 
-            logger = Logger(open('./model_log/{model_log_name}_{idx}.log', "w"))
+            logger = Logger(open(f'./model_log/{model_log_name}_base{idx}.log',
+                                 "w"))
             # evaluate
             robust_err, err, model_lb_batch = Train(model, 0, test_data, EpsilonScheduler("linear", 0, 0, eps, eps, 1), eps, norm, logger, verbose, False, None, method, **method_param)
             model_lb = torch.cat(model_lb_batch, 0)
@@ -179,7 +199,10 @@ def main():
         print(f'uniform robust error = {uniform_robust_err}')
         print(f'sigle best robust error = {min_robust_err}')
         print(f'single worst robust error = {max_robust_err}')
-
+        log({'AdaBoost Certified': ensemble_robust_error,
+             'Uniform Certified': uniform_robust_err,
+             'Single Best Certified': min_robust_err,
+             'Single Worst Certified': max_robust_err})
 
 
 
@@ -187,6 +210,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Adaboost on pre-trained CROWN-IBP models.')
     parser.add_argument('--iteration', '-T', type=int,
                         help='maximum number of running Adaboost')
+    parser.add_argument('--epsilon', '-e', type=float,
+                        help='epsilon for evaluating CROWN models')
     parser.add_argument('--load_ada', '-l', type=str,
                         help='path containing the saved Adaboost model')
     parser.add_argument('--models', '-m', type=str,
