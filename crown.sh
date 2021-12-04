@@ -1,5 +1,5 @@
 export PYTHONUNBUFFERED=1
-export PYTHONPATH='/mnt/e/Coding/Projects/CMSC828U/boosting-certified-defense/CROWN-IBP'
+export PYTHONPATH=$(pwd)
 
 for (( i = 1; i < 5; i++ )); do
   python ../CRWON_select_certified_error.py \
