@@ -35,6 +35,7 @@ class AdaBoostBase:
         self.test_data = test_data
         self.do_val = False if self.test_data is None else True
         self.K = len(self.weighted_data.dataset.dataset.classes)
+        self.classes = torch.arange(self.K).reshape(1, self.K).cuda()
 
         self.predictor_weight = []
         self.predictor_list = []
@@ -89,7 +90,7 @@ class AdaBoostBase:
         Args:
             X: The input for the prediction.
         Returns:
-            final_prediction: The final predicted class id.
+            final_prediction: The final predicted probability of each class id.
         """
         final_pred = torch.zeros((len(X), self.K)).cuda()
         X = X.to(self.device)
