@@ -4,15 +4,13 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from .base_predictor import BasePredictor
 from .dataset_wrapper import WeightedDataLoader
-from .modules import log
 from typing import Iterable, Union
 
 
 class AdaBoostBase:
     def __init__(self, dataset: Union[Dataset, DataLoader],
                  base_predictor_list: Iterable[BasePredictor], T,
-                 batch_size=256, shuffle=False, num_workers=0, old=False,
-                 test_data=None):
+                 batch_size=256, shuffle=False, num_workers=0, old=False):
         """
         Args:
             dataset: Torch.utils.data.Dataset or DataLoader. Should implement __len__() and __getitem__()
@@ -32,8 +30,6 @@ class AdaBoostBase:
         self.distribution = torch.Tensor([1.0 / self.num_samples] * self.num_samples)
         self.weighted_data = WeightedDataLoader(dataset, self.distribution,
                                                 batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
-        self.test_data = test_data
-        self.do_val = False if self.test_data is None else True
         self.K = len(self.weighted_data.dataset.dataset.classes)
         self.classes = torch.arange(self.K).reshape(1, self.K).cuda()
 
@@ -74,13 +70,6 @@ class AdaBoostBase:
             weight = self.update_model_weight(err, incorrect_pred, index)
             self.predictor_list.append(predictor)
             self.predictor_weight.append(weight)
-            if self.do_val:
-                incorrect = 0
-                for X, y in self.test_data:
-                    y_pred = self.predict(X).detach()
-                    incorrect += (y_pred != y).sum()
-                log({'Clean Error', incorrect / len(
-                    self.test_data.dataset)}, t)
         # Normalize model distribution, not necessary but easy to compare
         self.predictor_weight = [i/sum(self.predictor_weight) for i in self.predictor_weight]
 

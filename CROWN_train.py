@@ -13,7 +13,8 @@ from ada import AdaBoostBase, AdaBoostTrain, AdaBoostSamme, BasePredictor, Weigh
 from argparser import argparser
 from bound_layers import BoundSequential, BoundDataParallel
 from config import load_config, config_modelloader, config_dataloader, get_path
-import train
+from train import Train, Logger
+from train_ada import Train as TrainAda
 from eps_scheduler import EpsilonScheduler
 
 
@@ -24,7 +25,7 @@ class CROWNPredictor(BasePredictor):
 
 class TrainSAMME(AdaBoostSamme):
     def __init__(self, train_data, test_data, base_predictor_list, T, config):
-        super(TrainSAMME, self).__init__(train_data, base_predictor_list, T, shuffle=False)
+        super(TrainSAMME, self).__init__(train_data, base_predictor_list, T, shuffle=True)
         # self.train_data = train_data
         self.train_data = self.weighted_data
         self.test_data = test_data
@@ -101,7 +102,7 @@ class TrainSAMME(AdaBoostSamme):
         model_name = get_path(config, model_id, "model", load=False)
         best_model_name = get_path(config, model_id, "best_model", load=False)
         model_log = get_path(config, model_id, "train_log")
-        logger = train.Logger(open(model_log, "w"))
+        logger = Logger(open(model_log, "w"))
         logger.log(model_name)
         logger.log("Command line:", " ".join(sys.argv[:]))
         logger.log("training configurations:", train_config)
@@ -124,7 +125,8 @@ class TrainSAMME(AdaBoostSamme):
                                                                                     epoch_start_eps, epoch_end_eps))
             # with torch.autograd.detect_anomaly():
             start_time = time.time()
-            train.Train(model, t, self.train_data, epsilon_scheduler, max_eps, norm, logger, verbose, True, opt,
+            TrainAda(model, t, self.train_data, epsilon_scheduler, max_eps,
+                   norm, logger, verbose, True, opt,
                         method,
                         **method_param)
             if lr_decay_step:
@@ -139,7 +141,7 @@ class TrainSAMME(AdaBoostSamme):
             logger.log("Evaluating...")
             with torch.no_grad():
                 # evaluate
-                err, clean_err = train.Train(model, t, self.test_data,
+                err, clean_err, _ = Train(model, t, self.test_data,
                                              EpsilonScheduler("linear", 0, 0, epoch_end_eps, epoch_end_eps, 1),
                                              max_eps,
                                              norm, logger, verbose, False, None, method, **method_param)
@@ -193,37 +195,55 @@ class TrainSAMME(AdaBoostSamme):
 def main():
     config = load_config(crown_args)
     global_train_config = config["training_params"]
+    if args.epsilon is not None:
+        global_train_config['epsilon'] = args.epsilon
     models, _ = config_modelloader(config)
     models = [BoundSequential.convert(model, global_train_config["method_params"]["bound_opts"])
               for model in models]
 
     # Initialize Data
     train_data, test_data = config_dataloader(config, **global_train_config["loader_params"])
-    # Boost
-    ada = TrainSAMME(train_data,
-                     test_data,
-                     # [BasePredictor(model) for model in models],
-                     models,
-                     args.iteration,
-                     config)
-    ada.train()
-
-    print(ada.predictor_list)
-    print(ada.predictor_weight)
-
-    # Save the ensemble model
+    # Read existing Adaboost ensemble
     dump_name = os.path.basename(os.path.splitext(crown_args.config)[0])
-    data = ada.weighted_data
-    ada.weighted_data = None
-    # ada.base_predictor_list = None
-    with open(f'../ada_{dump_name}_T{ada.T}', "wb") as f:
-        pickle.dump(ada, f)
-    ada.weighted_data = data
+    dump_path = f'../ada_train_{dump_name}_eps{args.epsilon}_T{args.iteration}'
+    # if os.path.isfile(dump_path):
+    if os.path.isfile(dump_path):
+        print(f'Found Adaboost model at {dump_path}')
+        ada = pickle.load(open(dump_path, 'rb'))
+    else:
+        # Boost
+        ada = TrainSAMME(train_data,
+                         test_data,
+                         # [BasePredictor(model) for model in models],
+                         models,
+                         T=args.iteration,
+                         config=config)
+        ada.train()
+
+        print(f'Predictor Weights: {ada.predictor_weight}')
+
+        # Save the ensemble model
+        data = ada.weighted_data
+        ada.weighted_data = None
+        # ada.base_predictor_list = None
+        with open(dump_path, "wb") as f:
+            pickle.dump(ada, f)
+        ada.weighted_data = data
+    uniform = TrainSAMME(train_data,
+                         test_data,
+                         models,
+                         T=args.iteration,
+                         config=config)
+    uniform.base_predictor_list = ada.base_predictor_list
+    uniform.predictor_list = ada.predictor_list
+    uniform.predictor_weight = torch.ones(args.iteration)
+
     # Evaluate Adaboost ensemble
     print(f'\n{"Testing":=^20}\n')
     with torch.no_grad():
         # ada.base_predictor_list = models
         base_max = 0
+        base_min = 10000000
         for i in ada.predictor_list:
             predictor = ada.base_predictor_list[i]
             correct = 0
@@ -234,23 +254,33 @@ def main():
                 correct += (y_pred == y).sum()
             if correct > base_max:
                 base_max = correct
-        correct = [0, 0]
+                base_max_i = i
+            if correct < base_min:
+                base_min = correct
+        correct = 0.0
+        uniform_correct = 0.0
         for X, y in test_data:
             y_pred = ada.predict(X).to('cpu')
-            correct[1] += (y_pred == y).sum()
-            ada.predictor_weight = [1 / len(ada.predictor_list)] * len(ada.predictor_list)
-            y_pred = ada.predict(X).to('cpu')
-            correct[0] += (y_pred == y).sum()
-        print(f'max clean accuracy of base model: {base_max / len(test_data.dataset)}')
-        print(f'average clean accuracy of base model: {correct[0] / len(test_data.dataset)}')
-        print(f'clean accuracy: {correct[1] / len(test_data.dataset)}')
+            correct += (y_pred == y).float().sum()
+
+            y_pred = uniform.predict(X).to('cpu')
+            uniform_correct += (y_pred == y).sum()
+        print(f'max clean error of base model: '
+              f'{1.0 - base_max / len(test_data.dataset)}')
+        print(f'min clean error of base model: '
+              f'{1.0 - base_min / len(test_data.dataset)}')
+        print(f'uniform clean error: '
+              f'{1.0 - uniform_correct / len(test_data.dataset)}')
+        print(f'ada clean error: {1.0 - correct / len(test_data.dataset)}')
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Adaboost on pre-trained CROWN-IBP models.')
+    parser = argparse.ArgumentParser(description='Adaboost training CROWN-IBP '
+                                                 'models.')
     parser.add_argument('--iteration', '-T', type=int,
-                        help='the maximum number of running Adaboost')
-
+                        help='maximum number of running Adaboost')
+    parser.add_argument('--epsilon', '-e', type=float,
+                        help='epsilon for evaluating CROWN models')
     args, unknown = parser.parse_known_args()
     # Remove parsed args and pass to CORWN-IBP
     sys.argv[1:] = unknown
