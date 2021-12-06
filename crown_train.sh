@@ -4,7 +4,7 @@ export PYTHONPATH=$(pwd)
 for (( i = 1; i < 5; i++ )); do
    python ../CROWN_train.py \
    --config config/mnist_crown_large.json \
-   -T 20 \
+   -T 8 \
    -e 0.$i
 
 #  for (( T = 1; T < 21; T++ )); do

@@ -197,6 +197,7 @@ def main():
     global_train_config = config["training_params"]
     if args.epsilon is not None:
         global_train_config['epsilon'] = args.epsilon
+        config['models_path'] += f'{args.epsilon}/'
     models, _ = config_modelloader(config)
     models = [BoundSequential.convert(model, global_train_config["method_params"]["bound_opts"])
               for model in models]
