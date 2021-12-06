@@ -33,15 +33,16 @@ class TrainSAMME(AdaBoostSamme):
         # train.CrossEntropyLoss = get_weighted_ce(self.distribution)
 
     def predict(self, X):
-        final_pred = torch.zeros((len(X), self.K)).cuda()
-        X = X.to(self.device)
-        for i, weight in zip(self.predictor_list, self.predictor_weight):
-            cur_predictor = self.base_predictor_list[i]
-            cur_predictor.model.eval()
-            cur_weight = weight.cuda()
-            final_pred += cur_weight * cur_predictor.model(X, method_opt="forward", disable_multi_gpu=True)
-
-        return final_pred.argmax(dim=1)
+        return super().predict(X).argmax(dim=1)
+    #     final_pred = torch.zeros((len(X), self.K)).cuda()
+    #     X = X.to(self.device)
+    #     for i, weight in zip(self.predictor_list, self.predictor_weight):
+    #         cur_predictor = self.base_predictor_list[i]
+    #         cur_predictor.model.eval()
+    #         cur_weight = weight.cuda()
+    #         final_pred += cur_weight * cur_predictor.model(X, method_opt="forward", disable_multi_gpu=True)
+    #
+    #     return final_pred.argmax(dim=1)
 
     def gen_new_base_predictor(self, cur_round):
         # for model, model_config in zip(models, config["models"]):
