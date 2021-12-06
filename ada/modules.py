@@ -46,8 +46,7 @@ def get_weighted_ce(distribution):
 
 
 def init_logger(config: dict):
-    wandb.init(project="AdaDL", entity="lester")
-    wandb.config = config
+    wandb.init(project="AdaDL", entity="lester", config=config)
     wandb.run.name = '_'.join([f'{k}{v}' for k, v in config.items()])
 
 
